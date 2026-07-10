@@ -1,62 +1,96 @@
+<div align="center">
+
 # Granova
 
-Granovo sem naredil zase, da mi med **Google Meet** klici ni treba ročno pisati
-zapiskov. Aplikacija med klicem sama posname zvok, naredi **slovenski
-transkript** in po koncu klica v Google Doc zapiše **povzetek, ključne točke,
-naloge in osnutek objave**. Vse svoje zapiske zbiram v eni Drive mapi
+**Samodejni slovenski zapiski Google Meet klicev — lokalno, brez bota v klicu.**
+
+Med klicem posname zvok, sproti izpisuje transkript, po koncu pa v Google Doc
+zapiše povzetek, ključne točke, naloge in osnutek objave.
+
+![Platforma](https://img.shields.io/badge/platforma-Windows%20%7C%20macOS%2013%2B-0A66C2)
+![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB)
+![Zvok](https://img.shields.io/badge/zvok-obdelan%20lokalno-2E7D32)
+![Jezik](https://img.shields.io/badge/jezik-sloven%C5%A1%C4%8Dina-8E44AD)
+
+</div>
+
+---
+
+## O projektu
+
+Granovo sem naredil zase, da mi med Google Meet klici ni treba ročno pisati
+zapiskov. Vse teče lokalno na mojem računalniku — v klic ne pošiljam nobenega
+bota, zvoka pa ne pošiljam na noben svoj strežnik. Edini zunanji storitvi sta
+**OpenAI API** (transkripcija in povzetek; edini strošek) in **Google**
+(shranjevanje končnega dokumenta). Vse zapiske zbiram v eni Drive mapi
 **»Granola zapiski«**.
 
-Vse teče lokalno na mojem računalniku — nič ne pošiljam na noben svoj strežnik.
-Edini zunanji storitvi, ki ju uporabljam, sta **OpenAI API** (transkripcija in
-povzetek; edini strošek) in **Google** (shranjevanje končnega dokumenta).
+## Kako deluje
+
+```
+1. Zazna klic     Granova opazi odprto okno Google Meet klica.
+2. Posname zvok    Lokalno zajame zvok klica + moj mikrofon.
+3. Transkribira    Sproti izpiše slovenski transkript v živo okno.
+4. Povzame         Po koncu klica iz transkripta naredi strukturiran zapisek.
+5. Shrani          Zapisek shrani kot nov Google Doc v mapo »Granola zapiski«.
+```
+
+## Zmožnosti
+
+- 🎙️ **Zajem zvoka brez bota** — sistemski zvok klica in mikrofon zajamem
+  lokalno (Windows: WASAPI · macOS: ScreenCaptureKit).
+- 🇸🇮 **Slovenski transkript** — prilagojen slovenščini (OpenAI `gpt-4o-transcribe`).
+- 📝 **Strukturiran zapisek** — povzetek, ključne točke, naloge in osnutek objave.
+- 📄 **Naravnost v Google Docs** — vsak zapisek pristane v skupni Drive mapi.
+- 🖥️ **Diskretno v ozadju** — ikona v sistemski vrstici in živo okno med klicem.
+- 🔒 **Zasebno po zasnovi** — zvok se obdela lokalno, skrivnosti nikoli ne gredo v repozitorij.
 
 ## Stanje po platformah
 
 Granovo razvijam in vsak dan uporabljam na **Windows**, kjer je v celoti
-preverjena v živo. Dodal sem tudi **macOS** podporo (isti repozitorij, ista
-koda — ob zagonu se sama prilagodi sistemu), da jo lahko poganjam tudi na Macu.
+preverjena v živo. Dodal sem tudi **macOS** podporo — ista koda iz istega
+repozitorija, ki se ob zagonu sama prilagodi sistemu.
 
-| | Windows | macOS |
-|---|---|---|
+| Zmožnost | Windows | macOS |
+|---|:---:|:---:|
 | Nastavitev, Google prijava, zapis v Docs | ✅ | ✅ |
 | Sistemska vrstica + živo okno | ✅ | ✅ |
-| Zajem zvoka + zaznava Meet klica | ✅ | ✅ (macOS 13+) |
+| Zajem zvoka + zaznava Meet klica | ✅ | ✅ *(macOS 13+)* |
 
-Na macOS uporabljam ScreenCaptureKit za sistemski zvok in Quartz za zaznavo Meet
-klica — enako obnašanje kot na Windows. Potrebuje macOS 13 ali novejši ter
-enkratno namestitev Xcode ukaznih orodij (`xcode-select --install`), ki jo
-`setup.command` zahteva pri prevajanju pomočnika za zvok.
+> Na macOS uporabljam ScreenCaptureKit za sistemski zvok in Quartz za zaznavo
+> Meet klica — enako obnašanje kot na Windows. Potrebuje macOS 13+ in enkratno
+> namestitev Xcode ukaznih orodij (`xcode-select --install`), ki jo `setup.command`
+> zahteva pri prevajanju pomočnika za zvok.
 
-## Kaj potrebujem (enkrat)
+## Namestitev
+
+### Kaj potrebujem (enkrat)
 
 1. **Python 3.10+** — https://www.python.org/downloads/
    (na Windows pri namestitvi obkljukam *Add Python to PATH*).
 2. **OpenAI ključ** — https://platform.openai.com/api-keys (edini strošek).
 3. **Google račun** + ~5 minut za Google Cloud Console — glej [SETUP_GOOGLE.md](SETUP_GOOGLE.md).
 
-## Kako zaženem — Windows
+### Windows
 
 1. Kloniram / prenesem ta repozitorij.
 2. Dvokliknem **`setup.bat`** — pripravi okolje, vpraša za OpenAI ključ,
    odpre brskalnik za Google prijavo in ponudi samodejni zagon ob prijavi.
 3. Dvokliknem **`Start Granova.bat`** — ikona se pojavi v sistemski vrstici.
 
-To je vse. Ob vsakem Meet klicu se mi pokaže živo okno s transkriptom; po koncu
-klica se v Drive mapi »Granola zapiski« pojavi nov dokument.
-
-## Kako zaženem — macOS
+### macOS
 
 1. Kloniram / prenesem ta repozitorij.
 2. Desni klik na **`setup.command`** → **Open** (prvič macOS opozori, ker
    skripta ni podpisana) — enaki koraki kot na Windows.
 3. Desni klik na **`Start Granova.command`** → **Open**.
 
-> macOS me ob prvem snemanju vpraša za dovoljenji **Screen Recording** (za
-> zvok klica in zaznavo Meet okna) in **Microphone** — potrdim ju. Če se
-> snemanje po potrditvi še ne začne, enkrat zaprem in znova zaženem Granovo
-> (macOS pripne dovoljenje ob naslednjem zagonu).
+> macOS me ob prvem snemanju vpraša za dovoljenji **Screen Recording** (za zvok
+> klica in zaznavo Meet okna) in **Microphone** — potrdim ju. Če se snemanje po
+> potrditvi še ne začne, enkrat zaprem in znova zaženem Granovo (macOS pripne
+> dovoljenje ob naslednjem zagonu).
 
-## Kje je kaj
+## Kje najdem zapiske
 
 - **Zapiski**: Google Drive → mapa **Granola zapiski** (dokument
   `«Ime sestanka» — YYYY-MM-DD`).
@@ -80,17 +114,29 @@ klica se v Drive mapi »Granola zapiski« pojavi nov dokument.
 - **Kaj se dogaja?** — zaženem `Start Granova (debug).bat` (Windows), da vidim
   dnevnik v konzoli.
 
-## Ročni ukazi (če jih raje tipkam)
+## Tehnologija
 
-```
-python -m venv .venv
-.venv\Scripts\python -m pip install -r requirements.txt   # macOS: .venv/bin/python3
-python -m granova.setup        # celotna enkratna nastavitev
-python app.py                  # zagon aplikacije
-```
+| Področje | Windows | macOS |
+|---|---|---|
+| Zajem zvoka | WASAPI (`pyaudiowpatch`) | ScreenCaptureKit (Swift pomočnik) |
+| Zaznava klica | naslovi oken (`pygetwindow`) | Quartz `CGWindowList` |
+| Transkripcija | OpenAI `gpt-4o-transcribe` (fallback `whisper-1`) | ↖ isto |
+| Povzetek | OpenAI chat model, slovenski pozivi | ↖ isto |
+| Shranjevanje | Google Docs + Drive API (obseg `drive.file`) | ↖ isto |
+| Vmesnik | `pystray` (vrstica) + `tkinter` (živo okno) | ↖ isto |
 
-## Varnost
+Jedro (mešanje zvoka, transkripcija, povzetek, zapis) je platformno neodvisno;
+razlikuje se le zajem zvoka in zaznava oken, ki se ob zagonu izbereta samodejno.
+
+## Varnost in zasebnost
 
 Skrivnosti (`.env`, `client_secret*.json`, `token.json`, `config.json`) so v
-`.gitignore` in nikoli ne gredo v repozitorij. Aplikacija uporablja Google obseg
-`drive.file` — vidi **samo** mape in dokumente, ki jih je sama ustvarila.
+`.gitignore` in nikoli ne gredo v repozitorij. Zvok se obdela lokalno; v klic ne
+vstopa noben bot. Aplikacija uporablja Google obseg `drive.file` — vidi **samo**
+mape in dokumente, ki jih je sama ustvarila.
+
+---
+
+<div align="center">
+<sub>Osebni projekt · slovenščina · brez strežnikov · samo OpenAI in Google API</sub>
+</div>
