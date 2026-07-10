@@ -16,6 +16,21 @@ zapiše povzetek, ključne točke, naloge in osnutek objave.
 
 ---
 
+## Kazalo
+
+- [O projektu](#o-projektu)
+- [Zmožnosti](#zmožnosti)
+- [Kako deluje](#kako-deluje)
+- [Stanje po platformah](#stanje-po-platformah)
+- [Namestitev](#namestitev)
+- [Uporaba](#uporaba)
+- [Tehnologija](#tehnologija)
+- [Če kaj zaškripa](#če-kaj-zaškripa)
+- [Varnost in zasebnost](#varnost-in-zasebnost)
+- [Licenca](#licenca)
+
+---
+
 ## O projektu
 
 Granovo sem naredil zase, da mi med Google Meet klici ni treba ročno pisati
@@ -24,6 +39,16 @@ bota, zvoka pa ne pošiljam na noben svoj strežnik. Edini zunanji storitvi sta
 **OpenAI API** (transkripcija in povzetek; edini strošek) in **Google**
 (shranjevanje končnega dokumenta). Vse zapiske zbiram v eni Drive mapi
 **»Granola zapiski«**.
+
+## Zmožnosti
+
+- 🎙️ **Zajem zvoka brez bota** — sistemski zvok klica in mikrofon zajamem
+  lokalno (Windows: WASAPI · macOS: ScreenCaptureKit).
+- 🇸🇮 **Slovenski transkript** — prilagojen slovenščini (OpenAI).
+- 📝 **Strukturiran zapisek** — povzetek, ključne točke, naloge in osnutek objave.
+- 📄 **Naravnost v Google Docs** — vsak zapisek pristane v skupni Drive mapi.
+- 🖥️ **Diskretno v ozadju** — ikona v sistemski vrstici in živo okno med klicem.
+- 🔒 **Zasebno po zasnovi** — zvok se obdela lokalno, skrivnosti nikoli ne gredo v repozitorij.
 
 ## Kako deluje
 
@@ -34,16 +59,6 @@ bota, zvoka pa ne pošiljam na noben svoj strežnik. Edini zunanji storitvi sta
 4. Povzame         Po koncu klica iz transkripta naredi strukturiran zapisek.
 5. Shrani          Zapisek shrani kot nov Google Doc v mapo »Granola zapiski«.
 ```
-
-## Zmožnosti
-
-- 🎙️ **Zajem zvoka brez bota** — sistemski zvok klica in mikrofon zajamem
-  lokalno (Windows: WASAPI · macOS: ScreenCaptureKit).
-- 🇸🇮 **Slovenski transkript** — prilagojen slovenščini (OpenAI `gpt-4o-transcribe`).
-- 📝 **Strukturiran zapisek** — povzetek, ključne točke, naloge in osnutek objave.
-- 📄 **Naravnost v Google Docs** — vsak zapisek pristane v skupni Drive mapi.
-- 🖥️ **Diskretno v ozadju** — ikona v sistemski vrstici in živo okno med klicem.
-- 🔒 **Zasebno po zasnovi** — zvok se obdela lokalno, skrivnosti nikoli ne gredo v repozitorij.
 
 ## Stanje po platformah
 
@@ -90,7 +105,11 @@ repozitorija, ki se ob zagonu sama prilagodi sistemu.
 > potrditvi še ne začne, enkrat zaprem in znova zaženem Granovo (macOS pripne
 > dovoljenje ob naslednjem zagonu).
 
-## Kje najdem zapiske
+## Uporaba
+
+Ko je Granova enkrat nastavljena, teče tiho v sistemski vrstici in ne
+potrebuje nobenega ročnega koraka — ob vsakem Google Meet klicu se zažene
+sama, ob koncu klica pa sama zapiše zapisek.
 
 - **Zapiski**: Google Drive → mapa **Granola zapiski** (dokument
   `«Ime sestanka» — YYYY-MM-DD`).
@@ -99,20 +118,6 @@ repozitorija, ki se ob zagonu sama prilagodi sistemu.
   - macOS: `~/Library/Application Support/Granola`
 - **Rezervni zapiski**, če Google ni na voljo: `Granola/notes` v isti mapi
   (Markdown; ob naslednjem zagonu se poskusi ponovno).
-
-## Če kaj zaškripa
-
-- **`pip` javi SSL napako** — nekatera omrežja prestrezajo SSL; `setup` skripta
-  samodejno ponovi z `--trusted-host pypi.org --trusted-host files.pythonhosted.org`.
-- **»Google hasn't verified this app«** pri prijavi — pričakovano (aplikacija je
-  v načinu *Testing*): **Advanced → Go to Granova (unsafe) → Continue**.
-- **Ni zvoka / napaka pri snemanju na macOS** — preverim, da sta v *System
-  Settings → Privacy & Security* potrjeni dovoljenji **Screen Recording** in
-  **Microphone** za Terminal (oz. program, ki zažene Granovo), nato Granovo
-  znova zaženem. Če `setup.command` javi, da manjka `swiftc`, najprej zaženem
-  `xcode-select --install`.
-- **Kaj se dogaja?** — zaženem `Start Granova (debug).bat` (Windows), da vidim
-  dnevnik v konzoli.
 
 ## Tehnologija
 
@@ -128,12 +133,32 @@ repozitorija, ki se ob zagonu sama prilagodi sistemu.
 Jedro (mešanje zvoka, transkripcija, povzetek, zapis) je platformno neodvisno;
 razlikuje se le zajem zvoka in zaznava oken, ki se ob zagonu izbereta samodejno.
 
+## Če kaj zaškripa
+
+- **`pip` javi SSL napako** — nekatera omrežja prestrezajo SSL; `setup` skripta
+  samodejno ponovi z `--trusted-host pypi.org --trusted-host files.pythonhosted.org`.
+- **»Google hasn't verified this app«** pri prijavi — pričakovano (aplikacija je
+  v načinu *Testing*): **Advanced → Go to Granova (unsafe) → Continue**.
+- **Ni zvoka / napaka pri snemanju na macOS** — preverim, da sta v *System
+  Settings → Privacy & Security* potrjeni dovoljenji **Screen Recording** in
+  **Microphone** za Terminal (oz. program, ki zažene Granovo), nato Granovo
+  znova zaženem. Če `setup.command` javi, da manjka `swiftc`, najprej zaženem
+  `xcode-select --install`.
+- **Kaj se dogaja?** — zaženem `Start Granova (debug).bat` (Windows), da vidim
+  dnevnik v konzoli.
+
 ## Varnost in zasebnost
 
 Skrivnosti (`.env`, `client_secret*.json`, `token.json`, `config.json`) so v
 `.gitignore` in nikoli ne gredo v repozitorij. Zvok se obdela lokalno; v klic ne
 vstopa noben bot. Aplikacija uporablja Google obseg `drive.file` — vidi **samo**
 mape in dokumente, ki jih je sama ustvarila.
+
+## Licenca
+
+Osebni projekt brez formalne odprtokodne licence — koda je javno vidna zaradi
+preglednosti, ni pa (še) namenjena za ponovno uporabo ali prispevke tretjih.
+Če te kaj zanima ali najdeš hrošča, odpri Issue.
 
 ---
 
