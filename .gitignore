@@ -16,6 +16,9 @@ env/
 notes/
 jobs/
 
+# Testi — ostanejo lokalno, ne gredo na GitHub
+tests/
+
 # OS
 .DS_Store
 Thumbs.db
