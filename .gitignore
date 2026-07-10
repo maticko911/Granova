@@ -1,0 +1,21 @@
+# Skrivnosti — NIKOLI na GitHub
+.env
+*client_secret*.json
+token.json
+config.json
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# Lokalni podatki aplikacije
+notes/
+jobs/
+
+# OS
+.DS_Store
+Thumbs.db
