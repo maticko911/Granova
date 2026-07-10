@@ -18,7 +18,6 @@ zapiše povzetek, ključne točke, naloge in osnutek objave.
 
 ## Kazalo
 
-- [O projektu](#o-projektu)
 - [Zmožnosti](#zmožnosti)
 - [Kako deluje](#kako-deluje)
 - [Stanje po platformah](#stanje-po-platformah)
@@ -28,17 +27,6 @@ zapiše povzetek, ključne točke, naloge in osnutek objave.
 - [Če kaj zaškripa](#če-kaj-zaškripa)
 - [Varnost in zasebnost](#varnost-in-zasebnost)
 - [Licenca](#licenca)
-
----
-
-## O projektu
-
-Granovo sem naredil zase, da mi med Google Meet klici ni treba ročno pisati
-zapiskov. Vse teče lokalno na mojem računalniku — v klic ne pošiljam nobenega
-bota, zvoka pa ne pošiljam na noben svoj strežnik. Edini zunanji storitvi sta
-**OpenAI API** (transkripcija in povzetek; edini strošek) in **Google**
-(shranjevanje končnega dokumenta). Vse zapiske zbiram v eni Drive mapi
-**»Granola zapiski«**.
 
 ## Zmožnosti
 
