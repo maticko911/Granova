@@ -6,10 +6,12 @@ pytest>=8.0
 
 # Faza 2 — zajem zvoka + transkripcija
 pyaudiowpatch>=0.2.12; sys_platform == "win32"  # WASAPI, samo Windows
+sounddevice>=0.4; sys_platform == "darwin"  # mikrofon, samo macOS
 numpy>=2.0
 
 # Faza 3 — zaznava klica, živo okno, Google, tray
 pygetwindow>=0.0.9; sys_platform == "win32"  # zaznava oken, samo Windows
+pyobjc-framework-Quartz>=10; sys_platform == "darwin"  # naslovi oken, samo macOS
 google-api-python-client>=2.0
 google-auth-oauthlib>=1.2
 pystray>=0.19

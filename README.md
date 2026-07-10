@@ -13,11 +13,13 @@ povzetek) in Google (shranjevanje dokumenta).
 |---|---|---|
 | Nastavitev, Google prijava, zapis v Docs | ✅ | ✅ |
 | Sistemska vrstica + živo okno | ✅ | ✅ |
-| Zajem zvoka + zaznava Meet klica | ✅ | 🚧 naslednji mejnik |
+| Zajem zvoka + zaznava Meet klica | ✅ | ✅ (macOS 13+) |
 
-**Windows deluje v celoti.** Na macOS enkratna nastavitev, Google integracija in
-uporabniški vmesnik delujejo, zajem zvoka klica in samodejna zaznava Meet klica
-pa še nista narejena (ScreenCaptureKit pomočnik je naslednji korak razvoja).
+**Windows deluje v celoti in je preverjen v živo.** macOS uporablja
+ScreenCaptureKit za sistemski zvok in Quartz za zaznavo Meet klica — enako
+obnašanje kot na Windows. Potrebuje macOS 13 ali novejši ter enkratno
+namestitev Xcode ukaznih orodij (`xcode-select --install`), ki jo zahteva
+`setup.command` pri prevajanju pomočnika za zvok.
 
 ## Kaj potrebuješ (enkrat)
 
@@ -43,8 +45,10 @@ klica se v Drive mapi »Granola zapiski« pojavi nov dokument.
    skripta ni podpisana) — enaki koraki kot na Windows.
 3. Desni klik na **`Start Granova.command`** → **Open**.
 
-> macOS bo ob prvem snemanju (ko bo zajem zvoka narejen) vprašal za dovoljenji
-> *Microphone* in *Screen Recording* — to je pričakovano.
+> macOS bo ob prvem snemanju vprašal za dovoljenji **Screen Recording** (za
+> zvok klica in zaznavo Meet okna) in **Microphone** — potrdi ju. Če se
+> snemanje po potrditvi še ne začne, enkrat zapri in znova zaženi Granovo
+> (macOS pripne dovoljenje ob naslednjem zagonu).
 
 ## Kje je kaj
 
@@ -62,8 +66,11 @@ klica se v Drive mapi »Granola zapiski« pojavi nov dokument.
   samodejno ponovi z `--trusted-host pypi.org --trusted-host files.pythonhosted.org`.
 - **»Google hasn't verified this app«** pri prijavi — pričakovano (aplikacija je
   v načinu *Testing*): **Advanced → Go to Granova (unsafe) → Continue**.
-- **Ni zvoka / napaka pri snemanju na macOS** — zajem zvoka na macOS še ni
-  narejen (glej tabelo zgoraj); to ni napaka v nastavitvi.
+- **Ni zvoka / napaka pri snemanju na macOS** — preveri, da sta v *System
+  Settings → Privacy & Security* potrjeni dovoljenji **Screen Recording** in
+  **Microphone** za Terminal (oz. program, ki zažene Granovo), nato Granovo
+  znova zaženi. Če `setup.command` javi, da manjka `swiftc`, najprej zaženi
+  `xcode-select --install`.
 - **Kaj se dogaja?** — zaženi `Start Granova (debug).bat` (Windows), da vidiš
   dnevnik v konzoli.
 

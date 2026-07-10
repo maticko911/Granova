@@ -1,6 +1,6 @@
 """Skupni vmesnik za zajem zvoka.
 
-Vsaka platforma (Windows WASAPI zdaj, macOS ScreenCaptureKit kasneje) implementira
+Vsaka platforma (Windows WASAPI, macOS ScreenCaptureKit) implementira
 razred z metodami:
 
     start()            — začne zajem sistemskega zvoka in mikrofona v ozadju
@@ -29,4 +29,8 @@ def get_capture():
         from granova.audio_capture.windows_wasapi import WasapiCapture
 
         return WasapiCapture()
+    if sys.platform == "darwin":
+        from granova.audio_capture.mac_capture import MacCapture
+
+        return MacCapture()
     raise NotImplementedError(f"Zajem zvoka za {sys.platform} še ni podprt")

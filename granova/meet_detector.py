@@ -22,6 +22,30 @@ POLL_SECONDS = 3.0
 END_GRACE_POLLS = 2  # toliko zaporednih praznih ciklov, preden razglasimo konec
 
 
+def default_titles_fn():
+    """Vrne funkcijo za branje naslovov vseh oken na trenutni platformi."""
+    import sys
+
+    if sys.platform == "win32":
+        import pygetwindow
+
+        return pygetwindow.getAllTitles
+    if sys.platform == "darwin":
+        return _mac_window_titles
+    raise NotImplementedError(f"Branje naslovov oken za {sys.platform} še ni podprto")
+
+
+def _mac_window_titles() -> list[str]:
+    """Naslovi vidnih oken prek Quartz (deli dovoljenje Screen Recording z zvokom)."""
+    import Quartz
+
+    info = Quartz.CGWindowListCopyWindowInfo(
+        Quartz.kCGWindowListOptionOnScreenOnly | Quartz.kCGWindowListExcludeDesktopElements,
+        Quartz.kCGNullWindowID,
+    )
+    return [w.get(Quartz.kCGWindowName, "") for w in (info or [])]
+
+
 def find_meet_window(titles: list[str]) -> str | None:
     """Vrne ime sestanka iz naslova okna z aktivnim Meet klicem, sicer None."""
     for title in titles:
@@ -46,9 +70,7 @@ class MeetDetector:
         end_grace_polls: int = END_GRACE_POLLS,
     ) -> None:
         if titles_fn is None:
-            import pygetwindow
-
-            titles_fn = pygetwindow.getAllTitles
+            titles_fn = default_titles_fn()
         self._titles_fn = titles_fn
         self._on_started = on_call_started
         self._on_ended = on_call_ended
