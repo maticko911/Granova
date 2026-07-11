@@ -123,6 +123,21 @@ def folder_link(folder_id: str) -> str:
     return f"https://drive.google.com/drive/folders/{folder_id}"
 
 
+def notes_folder_link(creds) -> str | None:
+    """Povezava do skupne mape z zapiski; None, če je ni mogoče določiti.
+
+    Po create_doc je mapa že v _folder_cache, zato brez dodatnega API klica.
+    """
+    try:
+        folder_id = get_setting("drive_folder_id") or get_or_create_folder(
+            creds, get_setting("docs_folder_name", DEFAULT_DOCS_FOLDER)
+        )
+        return folder_link(folder_id)
+    except Exception:
+        logger.exception("Povezave do mape ni bilo mogoče določiti")
+        return None
+
+
 def create_doc(creds, title: str, result: MeetingResult) -> str:
     """Ustvari Google Doc, ga napolni in premakne v skupno mapo. Vrne povezavo."""
     from googleapiclient.discovery import build

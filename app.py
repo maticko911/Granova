@@ -15,7 +15,7 @@ import threading
 import tkinter as tk
 from datetime import datetime, timezone
 
-from granova import pipeline, state
+from granova import notify, pipeline, state
 from granova.config import APP_DIR
 from granova.live_window import LiveWindow
 from granova.meet_detector import MeetDetector
@@ -48,6 +48,7 @@ class GranovaApp:
         self._meeting_name = ""
         self._finalizing = False
         self._last_link: str | None = None
+        self._last_folder: str | None = None
 
         self.detector = MeetDetector(
             on_call_started=lambda name: self._events.put(("call_started", name)),
@@ -75,6 +76,7 @@ class GranovaApp:
             "Granova — čakam na Meet klic",
             menu=pystray.Menu(
                 pystray.MenuItem("Odpri zadnji dokument", self._open_last, enabled=lambda i: bool(self._last_link)),
+                pystray.MenuItem("Odpri mapo z zapiski", self._open_folder, enabled=lambda i: bool(self._last_folder)),
                 pystray.MenuItem("Izhod", lambda: self._events.put(("quit", None))),
             ),
         )
@@ -84,6 +86,12 @@ class GranovaApp:
             import webbrowser
 
             webbrowser.open(self._last_link)
+
+    def _open_folder(self) -> None:
+        if self._last_folder:
+            import webbrowser
+
+            webbrowser.open(self._last_folder)
 
     # ---------- dogodkovna zanka (tk nit) ----------
 
@@ -154,12 +162,17 @@ class GranovaApp:
                 window.show_error("Ni zaznanega govora — zapiski niso bili narejeni")
                 return
             job_path = state.save_job(transcript, title)
-            link = self._make_notes(transcript, title)
+            link, folder = self._make_notes(transcript, title)
             if link is None:
                 window.show_error("Premalo vsebine za zapiske")
             else:
                 self._last_link = link
-                window.show_done(link)
+                self._last_folder = folder
+                window.show_done(link, folder)
+                notify.notify_saved(
+                    "Zapiski so shranjeni — odpri iz okna ali sistemske vrstice.",
+                    tray=self.tray,
+                )
             state.delete_job(job_path)
         except Exception:
             logger.exception("Obdelava ni uspela — opravilo ostaja v vrsti za ponovni poskus")
@@ -168,19 +181,24 @@ class GranovaApp:
             self.tray.icon = _tray_image("#9e9e9e")
             self.tray.title = "Granova — čakam na Meet klic"
 
-    def _make_notes(self, transcript: str, title: str, raw_notes: str = "") -> str | None:
-        """Cevovod + zapis. Vrne povezavo do dokumenta ali None, če je gate zavrnil."""
+    def _make_notes(self, transcript: str, title: str, raw_notes: str = "") -> tuple[str | None, str | None]:
+        """Cevovod + zapis. Vrne (povezava do dokumenta, povezava do mape).
+
+        (None, None) če je gate zavrnil; ob lokalnem Markdown zapisu je mapa None.
+        """
         result = pipeline.process_meeting(transcript, raw_notes)
         if result is None:
-            return None
+            return None, None
         try:
             from granova.auth import get_credentials
-            from granova.docs_writer import create_doc
+            from granova.docs_writer import create_doc, notes_folder_link
 
-            return create_doc(get_credentials(), title, result)
+            creds = get_credentials()
+            link = create_doc(creds, title, result)
+            return link, notes_folder_link(creds)
         except Exception:
             logger.exception("Google Doc ni uspel — shranim lokalni Markdown")
-            return self._write_local_markdown(title, result)
+            return self._write_local_markdown(title, result), None
 
     @staticmethod
     def _write_local_markdown(title: str, result) -> str:
@@ -208,11 +226,16 @@ class GranovaApp:
     def _retry_pending_jobs(self) -> None:
         for path, job in state.load_jobs():
             try:
-                link = self._make_notes(job["transcript"], job.get("title", "Sestanek"), job.get("raw_notes", ""))
+                link, folder = self._make_notes(job["transcript"], job.get("title", "Sestanek"), job.get("raw_notes", ""))
                 state.delete_job(path)
                 if link:
                     self._last_link = link
+                    self._last_folder = folder
                     logger.info("Čakajoče opravilo dokončano: %s", link)
+                    notify.notify_saved(
+                        "Čakajoči zapiski so shranjeni — odpri iz sistemske vrstice.",
+                        tray=self.tray,
+                    )
             except Exception:
                 logger.exception("Ponovni poskus opravila ni uspel: %s", path)
 

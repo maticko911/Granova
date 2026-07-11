@@ -60,6 +60,12 @@ class LiveWindow:
         footer = tk.Frame(self._win, bg=BG)
         footer.pack(fill="x", padx=10, pady=8)
         self._link_label = tk.Label(footer, text="", fg="#6fa8dc", bg=BG, cursor="hand2", font=("Segoe UI", 9, "underline"))
+        self._doc_btn = tk.Button(
+            footer, text="Odpri Google Doc", bg=ACCENT_OK, fg="#ffffff",
+            activebackground="#4cae4c", activeforeground="#ffffff",
+            relief="flat", padx=14, pady=3, cursor="hand2",
+            font=("Segoe UI", 9, "bold"),
+        )
         self._stop_btn = tk.Button(
             footer, text="Ustavi", command=self._handle_stop,
             bg="#3a3a3a", fg=FG, relief="flat", padx=14, pady=3,
@@ -88,8 +94,8 @@ class LiveWindow:
     def show_processing(self) -> None:
         self._queue.put(("status", ("Pripravljam zapiske…", ACCENT_WAIT)))
 
-    def show_done(self, doc_link: str | None) -> None:
-        self._queue.put(("done", doc_link))
+    def show_done(self, doc_link: str | None, folder_link: str | None = None) -> None:
+        self._queue.put(("done", (doc_link, folder_link)))
 
     def show_error(self, message: str) -> None:
         self._queue.put(("status", (message, ACCENT_REC)))
@@ -119,13 +125,18 @@ class LiveWindow:
                     self._status.configure(text=text)
                     self._dot.configure(fg=color)
                 elif kind == "done":
-                    self._status.configure(text="✓ Zapiski pripravljeni")
+                    doc_link, folder_link = payload
+                    self._status.configure(text="✓ Zapiski shranjeni")
                     self._dot.configure(fg=ACCENT_OK)
-                    self._stop_btn.configure(text="Zapri", command=self._destroy)
-                    if payload:
-                        self._link_label.configure(text="Odpri Google Doc")
-                        self._link_label.pack(side="left")
-                        self._link_label.bind("<Button-1>", lambda e, url=payload: self._open(url))
+                    self._stop_btn.configure(text="Zapri", command=self._destroy, state="normal")
+                    if doc_link:
+                        self._doc_btn.configure(command=lambda url=doc_link: self._open(url))
+                        self._doc_btn.pack(side="left")
+                    if folder_link:
+                        self._link_label.configure(text="Mapa z zapiski")
+                        self._link_label.pack(side="left", padx=(8, 0))
+                        self._link_label.bind("<Button-1>", lambda e, url=folder_link: self._open(url))
+                    self._raise_to_front()
                 elif kind == "close":
                     self._destroy()
                     return
@@ -136,6 +147,16 @@ class LiveWindow:
             self._timer.configure(text=f"{elapsed // 60}:{elapsed % 60:02d}")
         try:
             self._win.after(200, self._tick)
+        except tk.TclError:
+            pass  # okno uničeno
+
+    def _raise_to_front(self) -> None:
+        """Dvigni okno v ospredje, da zaključek ni spregledan."""
+        try:
+            self._win.deiconify()
+            self._win.lift()
+            self._win.attributes("-topmost", True)
+            self._win.bell()
         except tk.TclError:
             pass  # okno uničeno
 
