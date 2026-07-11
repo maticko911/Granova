@@ -15,7 +15,7 @@ import threading
 import tkinter as tk
 from datetime import datetime, timezone
 
-from granova import notify, pipeline, state
+from granova import autostart, notify, pipeline, single_instance, state
 from granova.config import APP_DIR
 from granova.live_window import LiveWindow
 from granova.meet_detector import MeetDetector
@@ -59,6 +59,10 @@ class GranovaApp:
     # ---------- zagon ----------
 
     def run(self) -> None:
+        self._lock = single_instance.acquire()
+        if self._lock is None:
+            logger.info("Granova že teče — druga instanca se umika")
+            return
         APP_DIR.mkdir(parents=True, exist_ok=True)
         self.tray.run_detached()
         self.detector.start()
@@ -77,6 +81,11 @@ class GranovaApp:
             menu=pystray.Menu(
                 pystray.MenuItem("Odpri zadnji dokument", self._open_last, enabled=lambda i: bool(self._last_link)),
                 pystray.MenuItem("Odpri mapo z zapiski", self._open_folder, enabled=lambda i: bool(self._last_folder)),
+                pystray.MenuItem(
+                    "Samodejni zagon ob prijavi",
+                    self._toggle_autostart,
+                    checked=lambda i: autostart.is_enabled(),
+                ),
                 pystray.MenuItem("Izhod", lambda: self._events.put(("quit", None))),
             ),
         )
@@ -92,6 +101,15 @@ class GranovaApp:
             import webbrowser
 
             webbrowser.open(self._last_folder)
+
+    def _toggle_autostart(self, icon, item) -> None:
+        try:
+            if autostart.is_enabled():
+                autostart.disable()
+            else:
+                autostart.enable()
+        except Exception:
+            logger.exception("Preklop samodejnega zagona ni uspel")
 
     # ---------- dogodkovna zanka (tk nit) ----------
 

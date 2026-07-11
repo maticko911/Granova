@@ -3,8 +3,9 @@
     python -m granova.setup
 
 Koraki: OpenAI ključ (vpiše se v APP_DIR/config.json, izven repozitorija) →
-Google prijava + preizkusni dokument (glej SETUP_GOOGLE.md) → neobvezni
-samodejni zagon ob prijavi. Ponovni zagon je varen — narejeni koraki se preskočijo.
+Google prijava + preizkusni dokument (glej SETUP_GOOGLE.md) → samodejni zagon
+ob prijavi (privzeto vklopljen) → takojšen zagon v ozadju. Ponovni zagon je
+varen — narejeni koraki se preskočijo.
 """
 from __future__ import annotations
 
@@ -55,12 +56,13 @@ def _step_autostart() -> None:
         if autostart.is_enabled():
             print("✓ Samodejni zagon ob prijavi je že vklopljen")
             return
-        answer = input("→ Naj se Granova zažene samodejno ob prijavi v računalnik? [d/n] ").strip().lower()
-        if answer in {"d", "da", "y", "yes"}:
+        answer = input("→ Naj se Granova samodejno zažene ob vsaki prijavi (priporočeno)? [D/n] ").strip().lower()
+        if answer in {"n", "ne", "no"}:
+            print("  V redu — zaženeš jo ročno (Start Granova).")
+        else:
             path = autostart.enable()
             print(f"✓ Samodejni zagon vklopljen ({path})")
-        else:
-            print("  V redu — zaženeš jo ročno (Start Granova).")
+            print("  (Kadarkoli ga izklopiš v meniju ikone Granove v sistemski vrstici.)")
     except NotImplementedError as exc:
         print(f"  ({exc})")
 
@@ -80,9 +82,13 @@ def main() -> int:
     print()
     _step_autostart()
 
-    print("\nVse pripravljeno! Granova zdaj deluje samodejno:")
-    print("  zaženi jo (Start Granova ali: python app.py) in pusti v sistemski vrstici —")
-    print("  ob vsakem Meet klicu posname, transkribira in zapiše Google Doc.")
+    if autostart.launch_detached():
+        print("\nVse pripravljeno! Granova zdaj teče v ozadju (glej ikono v sistemski vrstici)")
+        print("  in se bo samodejno zagnala ob vsaki prijavi — terminala ni več treba odpirati.")
+        print("  Ob vsakem Meet klicu posname, transkribira in zapiše Google Doc.")
+    else:
+        print("\nVse pripravljeno! Zaženi jo s 'Start Granova' in pusti v sistemski vrstici —")
+        print("  ob vsakem Meet klicu posname, transkribira in zapiše Google Doc.")
     return 0
 
 

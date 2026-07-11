@@ -75,6 +75,51 @@ def launchagent_plist_content(repo: Path) -> str:
 """
 
 
+def _run_python(gui: bool = True, platform: str | None = None) -> str:
+    """Pot do interpreterja za zagon app.py (ista logika kot zagonske skripte).
+
+    gui=True na Windows izbere pythonw (brez konzolnega okna).
+    """
+    platform = platform or sys.platform
+    repo = repo_dir()
+    if platform == "win32":
+        name = "pythonw" if gui else "python"
+        venv = repo / ".venv" / "Scripts" / f"{name}.exe"
+        return str(venv) if venv.exists() else name
+    venv = repo / ".venv" / "bin" / "python3"
+    return str(venv) if venv.exists() else "python3"
+
+
+def launch_detached() -> bool:
+    """Zažene Granovo kot proces, neodvisen od terminala. Vrne uspeh.
+
+    Preživi zaprtje terminala/konzole; morebitno podvojitev prepreči
+    varovalo v app.py (single_instance).
+    """
+    try:
+        repo = repo_dir()
+        if sys.platform == "win32":
+            DETACHED_PROCESS = 0x00000008
+            CREATE_NEW_PROCESS_GROUP = 0x00000200
+            subprocess.Popen(
+                [_run_python(gui=True), "app.py"],
+                cwd=str(repo),
+                creationflags=DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP,
+                close_fds=True,
+            )
+        else:
+            subprocess.Popen(
+                [_run_python(gui=True), "app.py"],
+                cwd=str(repo),
+                start_new_session=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        return True
+    except Exception:
+        return False
+
+
 def is_enabled() -> bool:
     try:
         return entry_path().exists()

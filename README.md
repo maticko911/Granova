@@ -78,15 +78,14 @@ repozitorija, ki se ob zagonu sama prilagodi sistemu.
 
 1. Kloniram / prenesem ta repozitorij.
 2. Dvokliknem **`setup.bat`** — pripravi okolje, vpraša za OpenAI ključ,
-   odpre brskalnik za Google prijavo in ponudi samodejni zagon ob prijavi.
-3. Dvokliknem **`Start Granova.bat`** — ikona se pojavi v sistemski vrstici.
+   odpre brskalnik za Google prijavo, vklopi samodejni zagon ob prijavi in
+   Granovo takoj zažene v ozadju — ikona se pojavi v sistemski vrstici.
 
 ### macOS
 
 1. Kloniram / prenesem ta repozitorij.
 2. Desni klik na **`setup.command`** → **Open** (prvič macOS opozori, ker
    skripta ni podpisana) — enaki koraki kot na Windows.
-3. Desni klik na **`Start Granova.command`** → **Open**.
 
 > macOS me ob prvem snemanju vpraša za dovoljenji **Screen Recording** (za zvok
 > klica in zaznavo Meet okna) in **Microphone** — potrdim ju. Če se snemanje po
@@ -96,8 +95,11 @@ repozitorija, ki se ob zagonu sama prilagodi sistemu.
 ## Uporaba
 
 Ko je Granova enkrat nastavljena, teče tiho v sistemski vrstici in ne
-potrebuje nobenega ročnega koraka — ob vsakem Google Meet klicu se zažene
-sama, ob koncu klica pa sama zapiše zapisek.
+potrebuje nobenega ročnega koraka — zažene se sama ob vsaki prijavi v
+računalnik, ob vsakem Google Meet klicu začne snemati, ob koncu klica pa
+sama zapiše zapisek. Terminala ni treba nikoli odpirati; `Start Granova`
+skripti prideta prav le, če jo vmes ročno zaprem (v meniju ikone lahko
+samodejni zagon tudi izklopim).
 
 - **Zapiski**: Google Drive → mapa **Granola zapiski** (dokument
   `«Ime sestanka» — YYYY-MM-DD`).
