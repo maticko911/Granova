@@ -70,27 +70,53 @@ repozitorija, ki se ob zagonu sama prilagodi sistemu.
 ### Kaj potrebujem (enkrat)
 
 1. **Python 3.10+** — https://www.python.org/downloads/
-   (na Windows pri namestitvi obkljukam *Add Python to PATH*).
-2. **OpenAI ključ** — https://platform.openai.com/api-keys (edini strošek).
-3. **Google račun** + ~5 minut za Google Cloud Console — glej [SETUP_GOOGLE.md](SETUP_GOOGLE.md).
+   (na Windows med namestitvijo obkljukaj *Add Python to PATH*).
+2. Na **Windows** še **Git** — https://git-scm.com/download/win
+   (na macOS ni treba — sistem ga ponudi sam ob prvem `git` ukazu).
+3. **OpenAI ključ** — https://platform.openai.com/api-keys (edini strošek).
+4. **Google račun** + ~5 minut za Google Cloud Console — glej [SETUP_GOOGLE.md](SETUP_GOOGLE.md).
 
-### Windows
+### Namestitev v treh ukazih
 
-1. Kloniram / prenesem ta repozitorij.
-2. Dvokliknem **`setup.bat`** — pripravi okolje, vpraša za OpenAI ključ,
-   odpre brskalnik za Google prijavo, vklopi samodejni zagon ob prijavi in
-   Granovo takoj zažene v ozadju — ikona se pojavi v sistemski vrstici.
+Odpri terminal — **macOS**: `Cmd + preslednica` → natipkaj `Terminal` → Enter;
+**Windows**: Start → natipkaj `PowerShell` → Enter. Nato prilepi ukaze (po vsakem Enter):
 
-### macOS
+**macOS**
 
-1. Kloniram / prenesem ta repozitorij.
-2. Desni klik na **`setup.command`** → **Open** (prvič macOS opozori, ker
-   skripta ni podpisana) — enaki koraki kot na Windows.
+```
+git clone https://github.com/maticko911/Granova.git
+cd Granova
+bash setup.command
+```
 
-> macOS me ob prvem snemanju vpraša za dovoljenji **Screen Recording** (za zvok
-> klica in zaznavo Meet okna) in **Microphone** — potrdim ju. Če se snemanje po
-> potrditvi še ne začne, enkrat zaprem in znova zaženem Granovo (macOS pripne
+**Windows**
+
+```
+git clone https://github.com/maticko911/Granova.git
+cd Granova
+.\setup.bat
+```
+
+Od tu te setup sam vodi: vpraša za OpenAI ključ, odpre brskalnik za Google
+prijavo, vklopi samodejni zagon ob prijavi in Granovo zažene v ozadju — ikona
+se pojavi v sistemski/menijski vrstici.
+
+> Na macOS te ob prvem snemanju vpraša za dovoljenji **Screen Recording** (za
+> zvok klica in zaznavo Meet okna) in **Microphone** — potrdi ju. Če se snemanje
+> po potrditvi še ne začne, enkrat zapri in znova zaženi Granovo (macOS pripne
 > dovoljenje ob naslednjem zagonu).
+
+### Posodobitev
+
+Najprej zapri Granovo (ikona v vrstici → **Izhod**), nato v isti mapi:
+
+```
+cd Granova            # Windows: cd %USERPROFILE%\Granova
+git pull
+bash setup.command    # Windows: .\setup.bat
+```
+
+Že opravljeni koraki se preskočijo; Granova se znova zažene v ozadju.
 
 ## Uporaba
 
