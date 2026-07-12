@@ -16,6 +16,36 @@ zapiše povzetek, ključne točke, naloge in osnutek objave.
 
 ---
 
+## Namestitev v treh ukazih
+
+Predpogoj (enkrat): **Python 3.10+** ([python.org](https://www.python.org/downloads/) —
+na Windows obkljukaj *Add Python to PATH*); na **Windows** še **Git**
+([git-scm.com](https://git-scm.com/download/win)).
+
+Odpri terminal — **macOS**: `Cmd + preslednica` → `Terminal` → Enter;
+**Windows**: Start → `PowerShell` → Enter. Nato prilepi ukaze (po vsakem Enter):
+
+**macOS**
+
+```
+git clone https://github.com/maticko911/Granova.git
+cd Granova
+bash setup.command
+```
+
+**Windows**
+
+```
+git clone https://github.com/maticko911/Granova.git
+cd Granova
+.\setup.bat
+```
+
+Od tu te setup sam vodi (OpenAI ključ → Google prijava → samodejni zagon).
+Podrobnosti, predpogoji in posodobitev: [Namestitev](#namestitev).
+
+---
+
 ## Kazalo
 
 - [Zmožnosti](#zmožnosti)
