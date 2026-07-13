@@ -95,8 +95,9 @@ def downloads_candidates() -> list[Path]:
 
 
 def _save(text: str) -> None:
-    CLIENT_SECRET_PATH.parent.mkdir(parents=True, exist_ok=True)
-    CLIENT_SECRET_PATH.write_text(text, encoding="utf-8")
+    from granova.secrets_store import write_secret_text
+
+    write_secret_text(CLIENT_SECRET_PATH, text)
 
 
 def _read_entry(entry: str) -> tuple[str | None, str]:

@@ -21,11 +21,13 @@ from granova.setup_google import run_google_setup
 
 
 def _save_openai_key(key: str) -> None:
-    """Zapiše ključ v APP_DIR/config.json (obstoječa polja ohrani)."""
+    """Šifrirano zapiše ključ v APP_DIR/config.json (obstoječa polja ohrani)."""
+    from granova.secrets_store import write_secret_text
+
     APP_DIR.mkdir(parents=True, exist_ok=True)
     data = load_config().copy()
     data["openai_api_key"] = key
-    CONFIG_PATH.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    write_secret_text(CONFIG_PATH, json.dumps(data, indent=2))
     load_config.cache_clear()
 
 

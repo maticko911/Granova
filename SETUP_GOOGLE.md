@@ -43,12 +43,10 @@ Za vsakega: v iskalnik na vrhu vpiši ime → odpri → klikni **Enable**.
 1. **APIs & Services** → **Credentials** → **Create credentials** → **OAuth client ID**.
 2. Application type: **Desktop app**, ime `Granova` → **Create**.
 3. Klikni **Download JSON**.
-4. Preneseno datoteko shrani kot `client_secret.json` v mapo Granove:
-
-   - **Windows**: `%APPDATA%\Granola\client_secret.json`
-     (v Raziskovalcu vpiši `%APPDATA%\Granola` v naslovno vrstico; če mape ni, jo ustvari)
-   - **macOS**: `~/Library/Application Support/Granola/client_secret.json`
-     (v Finderju: Cmd+Shift+G → prilepi pot; če mape ni, jo ustvari)
+4. Preneseno datoteko shrani kot `client_secret.json` v mapo `data/` **znotraj
+   mape aplikacije** (npr. `Granova\data\client_secret.json`; če mape `data`
+   ni, jo ustvari). Terminalski čarovnik ob nastavitvi to običajno stori
+   samodejno — datoteko v Prenosih poišče in prekopira namesto tebe.
 
 ## 5. Zaženi nastavitev
 

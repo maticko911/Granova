@@ -162,10 +162,12 @@ samodejni zagon tudi izklopim).
 
 - **Zapiski**: Google Drive → mapa **Granola zapiski** (dokument
   `«Ime sestanka» — YYYY-MM-DD`).
-- **Nastavitve in skrivnosti** (izven repozitorija, ne gredo na GitHub):
-  - Windows: `%APPDATA%\Granola` (`config.json`, `client_secret.json`, `token.json`)
-  - macOS: `~/Library/Application Support/Granola`
-- **Rezervni zapiski**, če Google ni na voljo: `Granola/notes` v isti mapi
+- **Nastavitve in skrivnosti**: mapa `data/` **znotraj mape aplikacije**
+  (`config.json`, `client_secret.json`, `token.json`). Ker živijo v mapi
+  aplikacije, **izbris mape zbriše tudi vse skrivnosti** — ob ponovni uporabi je
+  treba vnesti nov OpenAI ključ in znova odobriti Google. Mapa je v `.gitignore`
+  in ne gre na GitHub.
+- **Rezervni zapiski**, če Google ni na voljo: `data/notes` v isti mapi
   (Markdown; ob naslednjem zagonu se poskusi ponovno).
 
 ## Tehnologija
@@ -198,10 +200,18 @@ razlikuje se le zajem zvoka in zaznava oken, ki se ob zagonu izbereta samodejno.
 
 ## Varnost in zasebnost
 
-Skrivnosti (`.env`, `client_secret*.json`, `token.json`, `config.json`) so v
-`.gitignore` in nikoli ne gredo v repozitorij. Zvok se obdela lokalno; v klic ne
-vstopa noben bot. Aplikacija uporablja Google obseg `drive.file` — vidi **samo**
-mape in dokumente, ki jih je sama ustvarila.
+Skrivnosti (`client_secret.json`, `token.json`, `config.json`) živijo v mapi
+`data/` **znotraj aplikacije** in so na disku **šifrirane** (glej
+`granova/secrets_store.py`). Šifrirni ključ varuje operacijski sistem na
+uporabnika — **Windows** DPAPI (`data/secret.key`, odklene ga samo tvoj Windows
+račun na tem računalniku), **macOS** login Keychain. Za drugega uporabnika, za
+kopijo mape ali za drug računalnik so datoteke neuporabne. Ker živijo v mapi
+aplikacije, **izbris mape zbriše vse skrivnosti** — ob ponovni uporabi je treba
+vnesti nov OpenAI ključ in znova odobriti Google. Mapa `data/` je v `.gitignore`
+in nikoli ne gre v repozitorij.
+
+Zvok se obdela lokalno; v klic ne vstopa noben bot. Aplikacija uporablja Google
+obseg `drive.file` — vidi **samo** mape in dokumente, ki jih je sama ustvarila.
 
 ## Licenca
 

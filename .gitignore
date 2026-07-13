@@ -12,7 +12,8 @@ __pycache__/
 venv/
 env/
 
-# Lokalni podatki aplikacije
+# Lokalni podatki aplikacije (ključ, Google prijava, žeton, zapiski, opravila)
+data/
 notes/
 jobs/
 

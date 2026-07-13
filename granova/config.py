@@ -1,15 +1,17 @@
 """Nalaganje konfiguracije.
 
 Ključ: OPENAI_API_KEY iz .env (razvoj) ali iz APP_DIR/config.json (produkcija).
-APP_DIR: Windows %APPDATA%\\Granola, macOS ~/Library/Application Support/Granola,
-Linux ~/.config/Granola. config.json podpira polja: openai_api_key, drive_folder_id
-(izrecen id obstoječe mape; sicer se mapa ustvari samodejno), docs_folder_name
-(ime samodejne mape, privzeto "Granola zapiski"), calendar_id, poll_seconds.
+APP_DIR: podatkovna mapa `data/` znotraj mape aplikacije. Vse skrivnosti (ključ,
+Google client_secret.json in token.json) živijo tu, zato izbris mape aplikacije
+zbriše tudi njih — stranka mora ob ponovni uporabi vnesti nov ključ in znova
+odobriti Google. Pot je mogoče prepisati z okoljsko GRANOVA_DATA_DIR.
+config.json podpira polja: openai_api_key, drive_folder_id (izrecen id obstoječe
+mape; sicer se mapa ustvari samodejno), docs_folder_name (ime samodejne mape,
+privzeto "Granola zapiski"), calendar_id, poll_seconds.
 """
 
 import json
 import os
-import sys
 from functools import lru_cache
 from pathlib import Path
 
@@ -22,13 +24,11 @@ DEFAULT_MODEL = os.getenv("GRANOVA_MODEL", "gpt-5.6-terra")
 
 
 def _default_app_dir() -> Path:
-    """Mapa za config/skrivnosti po navadah posameznega OS."""
-    if sys.platform == "win32":
-        return Path(os.environ.get("APPDATA", str(Path.home()))) / "Granola"
-    if sys.platform == "darwin":
-        return Path.home() / "Library" / "Application Support" / "Granola"
-    xdg = os.environ.get("XDG_CONFIG_HOME")
-    return (Path(xdg) if xdg else Path.home() / ".config") / "Granola"
+    """Podatkovna mapa znotraj aplikacije, da izbris mape zbriše tudi skrivnosti."""
+    override = os.environ.get("GRANOVA_DATA_DIR")
+    if override:
+        return Path(override)
+    return Path(__file__).resolve().parent.parent / "data"
 
 
 APP_DIR = _default_app_dir()
@@ -37,9 +37,12 @@ CONFIG_PATH = APP_DIR / "config.json"
 
 @lru_cache(maxsize=1)
 def load_config() -> dict:
-    """Vrne vsebino APP_DIR/config.json (ali prazen dict)."""
+    """Vrne vsebino APP_DIR/config.json (ali prazen dict). Datoteka je šifrirana."""
+    from granova.secrets_store import read_secret_text
+
     try:
-        return json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+        text = read_secret_text(CONFIG_PATH)
+        return json.loads(text) if text else {}
     except (OSError, ValueError):
         return {}
 
