@@ -1,5 +1,11 @@
 # Granova — enkratna nastavitev Google računa
 
+> **Tega dokumenta ti ni treba brati vnaprej:** `setup.bat` / `setup.command`
+> te skozi vse spodnje korake vodi sam — v terminalu, korak za korakom, s
+> samodejnim odpiranjem pravih strani. Preneseno JSON datoteko na koncu samo
+> povlečeš v okno terminala (ali prilepiš njeno vsebino) in setup nadaljuje
+> sam. Ta datoteka ostaja kot ročna referenca.
+
 Da Granova po vsakem sestanku ustvari Google Doc (in vse dokumente zbira v eni
 mapi »Granola zapiski« na Drive), potrebuje dovoljenje tvojega Google računa.
 To narediš **enkrat**, traja ~5 minut. Edini ročni del je Google Cloud Console —

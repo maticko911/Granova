@@ -104,7 +104,8 @@ repozitorija, ki se ob zagonu sama prilagodi sistemu.
 2. Na **Windows** še **Git** — https://git-scm.com/download/win
    (na macOS ni treba — sistem ga ponudi sam ob prvem `git` ukazu).
 3. **OpenAI ključ** — https://platform.openai.com/api-keys (edini strošek).
-4. **Google račun** + ~5 minut za Google Cloud Console — glej [SETUP_GOOGLE.md](SETUP_GOOGLE.md).
+4. **Google račun** + ~5 minut za Google Cloud Console — setup te skozi to
+   vodi sam, korak za korakom (ročna referenca: [SETUP_GOOGLE.md](SETUP_GOOGLE.md)).
 
 ### Namestitev v treh ukazih
 
@@ -127,9 +128,11 @@ cd Granova
 .\setup.bat
 ```
 
-Od tu te setup sam vodi: vpraša za OpenAI ključ, odpre brskalnik za Google
-prijavo, vklopi samodejni zagon ob prijavi in Granovo zažene v ozadju — ikona
-se pojavi v sistemski/menijski vrstici.
+Od tu te setup sam vodi: vpraša za OpenAI ključ, te korak za korakom pelje
+skozi Google Cloud Console (strani odpira sam, preneseno datoteko samo povlečeš
+v terminal ali prilepiš njeno vsebino), odpre brskalnik za Google prijavo,
+vklopi samodejni zagon ob prijavi in Granovo zažene v ozadju — ikona se pojavi
+v sistemski/menijski vrstici.
 
 > Na macOS te ob prvem snemanju vpraša za dovoljenji **Screen Recording** (za
 > zvok klica in zaznavo Meet okna) in **Microphone** — potrdi ju. Če se snemanje

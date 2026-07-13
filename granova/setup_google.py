@@ -2,10 +2,11 @@
 
     python -m granova.setup_google
 
-Koraki: preveri client_secret.json → prijava v brskalniku (token.json) →
-ustvari/najde skupno Drive mapo → zapiše preizkusni dokument, da vizualno
-potrdiš delovanje pred pravim klicem. Navodila za Google Cloud Console so
-v SETUP_GOOGLE.md.
+Koraki: client_secret.json (če manjka, terminalski čarovnik vodi skozi
+Google Cloud Console — glej client_secret_wizard.py) → prijava v brskalniku
+(token.json) → ustvari/najde skupno Drive mapo → zapiše preizkusni dokument,
+da vizualno potrdiš delovanje pred pravim klicem. Ročna referenca:
+SETUP_GOOGLE.md.
 """
 from __future__ import annotations
 
@@ -54,12 +55,14 @@ def verify_google(creds) -> tuple[str, str]:
 def run_google_setup(next_command: str = "python -m granova.setup_google") -> int:
     """Celoten Google del nastavitve; vrne 0 ob uspehu, 1 če manjka client_secret."""
     if not CLIENT_SECRET_PATH.exists():
-        print(f"✗ Manjka {CLIENT_SECRET_PATH}")
-        print("  Sledi korakom v SETUP_GOOGLE.md (Google Cloud Console → OAuth")
-        print("  Desktop credentials → prenesi JSON in ga shrani na zgornjo pot),")
-        print(f"  nato ponovno zaženi: {next_command}")
-        return 1
-    print(f"✓ client_secret.json najden ({CLIENT_SECRET_PATH})")
+        from granova.client_secret_wizard import run_wizard
+
+        if not run_wizard():
+            print(f"  Ko boš pripravljen(a), nastavitev nadaljuješ z: {next_command}")
+            print("  (Ročna navodila za vse korake: SETUP_GOOGLE.md)")
+            return 1
+    else:
+        print(f"✓ client_secret.json najden ({CLIENT_SECRET_PATH})")
 
     print("→ Prijava v Google (odpre se brskalnik, samo prvič) ...")
     creds = get_credentials()
