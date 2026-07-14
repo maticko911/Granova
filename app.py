@@ -17,7 +17,7 @@ import sys
 import threading
 import tkinter as tk
 
-from granova import autostart, notify, pipeline, single_instance, state, trust
+from granova import autostart, notify, pipeline, single_instance, state, trust, updater
 from granova.config import APP_DIR
 from granova.live_window import LiveWindow
 from granova.meet_detector import MeetDetector
@@ -328,6 +328,7 @@ class GranovaApp:
 
 if __name__ == "__main__":
     _configure_diagnostics()
+    updater.self_update()  # prenese novo kodo z GitHuba in se znova zažene (če je novost)
     trust.install()
     try:
         GranovaApp().run()
