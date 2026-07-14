@@ -36,13 +36,24 @@ class _StreamReader:
         self._thread.start()
 
     def _loop(self) -> None:
-        while self._running:
+        try:
+            while self._running:
+                try:
+                    chunk = self._stream.read(FRAMES_PER_BUFFER, exception_on_overflow=False)
+                except OSError:
+                    break
+                with self._lock:
+                    self._frames.append(chunk)
+        finally:
+            # Tok MORA zapreti nit, ki bere. PyAudio/PortAudio ni thread-safe:
+            # klic stop_stream()/close() iz druge niti, medtem ko je ta v read(),
+            # sproži nativni access violation, ki v trenutku ubije cel proces
+            # (tudi tray, tudi ozadje) — brez Python izjeme, ki bi jo lahko ujeli.
             try:
-                chunk = self._stream.read(FRAMES_PER_BUFFER, exception_on_overflow=False)
+                self._stream.stop_stream()
+                self._stream.close()
             except OSError:
-                break
-            with self._lock:
-                self._frames.append(chunk)
+                pass
 
     def drain(self) -> Pcm | None:
         with self._lock:
@@ -51,14 +62,16 @@ class _StreamReader:
             return None
         return Pcm(data=b"".join(frames), rate=self.rate, channels=self.channels)
 
-    def stop(self) -> None:
+    def stop(self) -> bool:
+        """Signalizira ustavitev; tok zapre bralna nit sama (v _loop finally).
+
+        Vrne True, če se je nit čisto ustavila. Ob koncu klica loopback vir
+        včasih obmolkne in read() obtiči; tedaj nit lahko ostane blokirana, a se
+        ne dotika ničesar zunaj sebe — zato je to varno in ne zruši procesa.
+        """
         self._running = False
-        self._thread.join(timeout=2)
-        try:
-            self._stream.stop_stream()
-            self._stream.close()
-        except OSError:
-            pass
+        self._thread.join(timeout=5)
+        return not self._thread.is_alive()
 
 
 def _find_loopback(pa) -> dict:
@@ -100,10 +113,12 @@ class WasapiCapture:
         return system, mic
 
     def stop(self) -> None:
-        if self._system:
-            self._system.stop()
-        if self._mic:
-            self._mic.stop()
-        if self._pa:
+        system_ok = self._system.stop() if self._system else True
+        mic_ok = self._mic.stop() if self._mic else True
+        # pa.terminate() bi ob še blokirani read() sprožil isti access violation,
+        # zato terminiramo šele, ko sta obe bralni niti čisto končali. V redkem
+        # primeru obtičale niti raje pustimo PyAudio nezaprt (majhno puščanje)
+        # kot da tvegamo zlom celega procesa.
+        if self._pa and system_ok and mic_ok:
             self._pa.terminate()
         self._system = self._mic = self._pa = None
