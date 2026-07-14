@@ -127,12 +127,44 @@ def is_enabled() -> bool:
         return False
 
 
+def refresh() -> bool:
+    """Poravna obstoječi zagonski vnos s trenutno mapo aplikacije.
+
+    Vnos hrani absolutno pot do mape; če se mapa premakne ali preimenuje,
+    star vnos ob prijavi tiho odpove (cd na neobstoječo mapo, brez okna in
+    brez napake). Vrne True, če je bil vnos znova zapisan.
+    """
+    try:
+        path = entry_path()
+    except NotImplementedError:
+        return False
+    if not path.exists():
+        return False  # samodejni zagon ni vključen — ne vklapljaj ga sam
+    expected = (
+        windows_cmd_content(repo_dir()) if sys.platform == "win32"
+        else launchagent_plist_content(repo_dir())
+    )
+    try:
+        current = path.read_text(encoding="utf-8")
+    except OSError:
+        current = ""
+    # primerjava neodvisno od vrste prelomov vrstic (\r\n proti \n)
+    def _norm(s: str) -> str:
+        return s.replace("\r\n", "\n").replace("\r", "\n")
+
+    if _norm(current) == _norm(expected):
+        return False
+    enable()
+    return True
+
+
 def enable() -> Path:
     """Ustvari zagonski vnos in vrne njegovo pot."""
     path = entry_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     if sys.platform == "win32":
-        path.write_text(windows_cmd_content(repo_dir()), encoding="utf-8")
+        # newline="" — brez prevajanja, da \r\n ne postane \r\r\n
+        path.write_text(windows_cmd_content(repo_dir()), encoding="utf-8", newline="")
     else:  # darwin (drugi OS-i padejo že v entry_path)
         path.write_text(launchagent_plist_content(repo_dir()), encoding="utf-8")
         subprocess.run(["launchctl", "load", str(path)], check=False,

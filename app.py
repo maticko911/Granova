@@ -9,23 +9,72 @@ Zagon:  python app.py
 """
 from __future__ import annotations
 
+import faulthandler
 import logging
+import logging.handlers
 import queue
+import sys
 import threading
 import tkinter as tk
-from datetime import datetime, timezone
 
-from granova import autostart, notify, pipeline, single_instance, state
+from granova import autostart, notify, pipeline, single_instance, state, trust
 from granova.config import APP_DIR
 from granova.live_window import LiveWindow
 from granova.meet_detector import MeetDetector
 from granova.recorder import Recorder
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-)
 logger = logging.getLogger("granova.app")
+
+LOG_PATH = APP_DIR / "granova.log"
+_configured = False
+_crash_file = None  # ostati mora odprt, dokler faulthandler piše vanj
+
+
+def _configure_diagnostics() -> None:
+    """Dnevnik v datoteko + globalni lovilci izjem — da noben tih zlom ne izgine.
+
+    Pri samodejnem zagonu prek pythonw ni konzole: brez tega gre vsaka sledilna
+    napaka v nič in aplikacija se navidez »samo zapre«. Zdaj vse pristane v
+    data/granova.log, nativni zlomi pa v data/granova-crash.log.
+    """
+    global _configured, _crash_file
+    if _configured:
+        return
+    _configured = True
+    APP_DIR.mkdir(parents=True, exist_ok=True)
+
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+    fmt = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+    file_handler = logging.handlers.RotatingFileHandler(
+        LOG_PATH, maxBytes=1_000_000, backupCount=3, encoding="utf-8"
+    )
+    file_handler.setFormatter(fmt)
+    root.addHandler(file_handler)
+    if sys.stderr is not None:  # konzola obstaja le pri python (ne pythonw)
+        stream = logging.StreamHandler()
+        stream.setFormatter(fmt)
+        root.addHandler(stream)
+
+    try:
+        _crash_file = open(APP_DIR / "granova-crash.log", "a", encoding="utf-8")
+        faulthandler.enable(file=_crash_file)
+    except Exception:
+        logger.warning("faulthandler ni bilo mogoče vključiti", exc_info=True)
+
+    def _log_uncaught(exc_type, exc, tb):
+        logger.critical("Neujeta izjema", exc_info=(exc_type, exc, tb))
+
+    sys.excepthook = _log_uncaught
+
+    def _log_thread(args):
+        name = args.thread.name if args.thread else "?"
+        logger.critical(
+            "Neujeta izjema v niti %s", name,
+            exc_info=(args.exc_type, args.exc_value, args.exc_traceback),
+        )
+
+    threading.excepthook = _log_thread
 
 
 def _tray_image(color: str):
@@ -41,6 +90,9 @@ class GranovaApp:
     def __init__(self) -> None:
         self.root = tk.Tk()
         self.root.withdraw()  # glavno okno je skrito; vidna so le živa okna
+        self.root.report_callback_exception = lambda *a: logger.critical(
+            "Napaka v tkinter callbacku", exc_info=a
+        )
 
         self._events: queue.Queue = queue.Queue()
         self._window: LiveWindow | None = None
@@ -59,11 +111,17 @@ class GranovaApp:
     # ---------- zagon ----------
 
     def run(self) -> None:
+        trust.install()  # zaupaj sistemski certifikatni shrambi (protivirusno HTTPS skeniranje)
         self._lock = single_instance.acquire()
         if self._lock is None:
             logger.info("Granova že teče — druga instanca se umika")
             return
         APP_DIR.mkdir(parents=True, exist_ok=True)
+        try:
+            if autostart.refresh():
+                logger.info("Samodejni zagon: vnos je kazal na staro mapo — posodobljen")
+        except Exception:
+            logger.warning("Samodejnega zagona ni bilo mogoče osvežiti", exc_info=True)
         self.tray.run_detached()
         self.detector.start()
         threading.Thread(target=self._retry_pending_jobs, daemon=True).start()
@@ -194,7 +252,7 @@ class GranovaApp:
             state.delete_job(job_path)
         except Exception:
             logger.exception("Obdelava ni uspela — opravilo ostaja v vrsti za ponovni poskus")
-            window.show_error("Napaka — poskusim ob naslednjem zagonu")
+            window.show_error("Napaka pri shranjevanju — Granova teče naprej in poskusi znova ob naslednjem zagonu")
         finally:
             self.tray.icon = _tray_image("#9e9e9e")
             self.tray.title = "Granova — čakam na Meet klic"
@@ -269,4 +327,10 @@ class GranovaApp:
 
 
 if __name__ == "__main__":
-    GranovaApp().run()
+    _configure_diagnostics()
+    trust.install()
+    try:
+        GranovaApp().run()
+    except Exception:
+        logger.critical("Granova se je nepričakovano ustavila", exc_info=True)
+        raise

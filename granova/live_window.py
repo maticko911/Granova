@@ -124,6 +124,10 @@ class LiveWindow:
                     text, color = payload
                     self._status.configure(text=text)
                     self._dot.configure(fg=color)
+                    if color == ACCENT_REC:  # končno sporočilo o napaki
+                        # okno ostane odprto; ponudi jasen gumb za zaprtje in ga dvigni
+                        self._stop_btn.configure(text="Zapri", command=self._destroy, state="normal")
+                        self._raise_to_front()
                 elif kind == "done":
                     doc_link, folder_link = payload
                     self._status.configure(text="✓ Zapiski shranjeni")
