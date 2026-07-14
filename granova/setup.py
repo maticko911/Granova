@@ -74,6 +74,9 @@ def main() -> int:
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
 
+    from granova import trust
+    trust.install()  # zaupaj sistemski certifikatni shrambi (protivirusno HTTPS skeniranje)
+
     print("Granova — enkratna nastavitev\n")
 
     if not _step_openai():

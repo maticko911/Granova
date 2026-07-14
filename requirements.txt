@@ -3,6 +3,7 @@ openai>=2.0
 pydantic>=2.0
 python-dotenv>=1.0
 pytest>=8.0
+truststore>=0.9  # zaupaj sistemski cert. shrambi (protivirusno HTTPS skeniranje re-podpiše promet)
 
 # Faza 2 — zajem zvoka + transkripcija
 pyaudiowpatch>=0.2.12; sys_platform == "win32"  # WASAPI, samo Windows

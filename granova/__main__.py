@@ -17,6 +17,9 @@ def main() -> int:
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
+    from granova import trust
+    trust.install()  # zaupaj sistemski certifikatni shrambi (protivirusno HTTPS skeniranje)
+
     if len(sys.argv) < 2:
         print(__doc__)
         return 1
