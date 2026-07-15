@@ -16,6 +16,10 @@ from pathlib import Path
 ENTRY_NAME = "Granova"
 LAUNCHAGENT_LABEL = "com.granova.app"
 
+# Koliko časa po zagonu počakamo, da vidimo, ali je proces obstal ali umrl.
+# Uvoz knjižnic + tk okno sta na počasnem disku lahko sekundo ali dve.
+STARTUP_GRACE_SECONDS = 3.0
+
 
 def repo_dir() -> Path:
     """Koren repozitorija (mapa z app.py)."""
@@ -50,12 +54,17 @@ def windows_cmd_content(repo: Path) -> str:
 
 
 def launchagent_plist_content(repo: Path) -> str:
-    """LaunchAgent plist: bash ovoj izbere .venv python3, če obstaja."""
+    """LaunchAgent plist: bash ovoj izbere .venv python3, če obstaja.
+
+    Izpis speljemo v dnevnik: launchd ga sicer vrže v nič in zlom ob prijavi
+    ne pusti nobene sledi — videti je, kot da se aplikacija »ni zagnala«.
+    """
     script = (
         f"cd '{repo}' && "
         "if [ -x .venv/bin/python3 ]; then exec .venv/bin/python3 app.py; "
         "else exec /usr/bin/env python3 app.py; fi"
     )
+    log = repo / "data" / "granova-startup.log"
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -70,6 +79,10 @@ def launchagent_plist_content(repo: Path) -> str:
     </array>
     <key>RunAtLoad</key>
     <true/>
+    <key>StandardOutPath</key>
+    <string>{log}</string>
+    <key>StandardErrorPath</key>
+    <string>{log}</string>
 </dict>
 </plist>
 """
@@ -90,34 +103,70 @@ def _run_python(gui: bool = True, platform: str | None = None) -> str:
     return str(venv) if venv.exists() else "python3"
 
 
-def launch_detached() -> bool:
-    """Zažene Granovo kot proces, neodvisen od terminala. Vrne uspeh.
+def startup_log_path() -> Path:
+    """Dnevnik zgodnjega zagona — stdout/stderr novo zagnanega procesa."""
+    from granova.config import APP_DIR
 
-    Preživi zaprtje terminala/konzole; morebitno podvojitev prepreči
-    varovalo v app.py (single_instance).
+    return APP_DIR / "granova-startup.log"
+
+
+def _open_startup_log():
+    try:
+        path = startup_log_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        return open(path, "a", encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+
+
+def launch_detached(grace_seconds: float = STARTUP_GRACE_SECONDS) -> bool:
+    """Zažene Granovo kot proces, neodvisen od terminala. Vrne True le, če živi.
+
+    Preživi zaprtje terminala/konzole; morebitno podvojitev prepreči varovalo
+    v app.py (single_instance).
+
+    Zgodnji zlom (manjkajoča odvisnost, napaka ob uvozu) se drugače izgubi:
+    proces se splodi, takoj umre, klicatelj pa javi uspeh — stranka prebere
+    »teče v ozadju«, v resnici pa ne teče nič. Zato gresta stdout in stderr v
+    `startup_log_path()` (namesto v DEVNULL), tu pa počakamo `grace_seconds` in
+    vrnemo False, če proces v tem času umre. Dnevnik takrat pove, zakaj.
     """
     try:
         repo = repo_dir()
-        if sys.platform == "win32":
-            DETACHED_PROCESS = 0x00000008
-            CREATE_NEW_PROCESS_GROUP = 0x00000200
-            subprocess.Popen(
-                [_run_python(gui=True), "app.py"],
-                cwd=str(repo),
-                creationflags=DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP,
-                close_fds=True,
-            )
-        else:
-            subprocess.Popen(
-                [_run_python(gui=True), "app.py"],
-                cwd=str(repo),
-                start_new_session=True,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-        return True
+        log = _open_startup_log()
+        out = log or subprocess.DEVNULL
+        err = subprocess.STDOUT if log else subprocess.DEVNULL
+        try:
+            if sys.platform == "win32":
+                DETACHED_PROCESS = 0x00000008
+                CREATE_NEW_PROCESS_GROUP = 0x00000200
+                proc = subprocess.Popen(
+                    [_run_python(gui=True), "app.py"],
+                    cwd=str(repo),
+                    creationflags=DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP,
+                    close_fds=True,
+                    stdout=out,
+                    stderr=err,
+                )
+            else:
+                proc = subprocess.Popen(
+                    [_run_python(gui=True), "app.py"],
+                    cwd=str(repo),
+                    start_new_session=True,
+                    stdout=out,
+                    stderr=err,
+                )
+        finally:
+            if log:
+                log.close()  # cev ostane odprta v otroku
     except Exception:
         return False
+
+    try:
+        proc.wait(timeout=grace_seconds)
+    except subprocess.TimeoutExpired:
+        return True  # še vedno teče — zagon je obstal
+    return False  # umrl med zagonom; vzrok je v startup dnevniku
 
 
 def is_enabled() -> bool:

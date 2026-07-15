@@ -69,6 +69,16 @@ def _step_autostart() -> None:
         print(f"  ({exc})")
 
 
+def _foreground_command() -> str:
+    """Ukaz, ki app.py zažene v ospredju — napaka pade na zaslon, ne v dnevnik."""
+    repo = autostart.repo_dir()
+    if sys.platform == "win32":
+        exe = repo / ".venv" / "Scripts" / "python.exe"
+        return f'"{exe}" app.py' if exe.exists() else "python app.py"
+    exe = repo / ".venv" / "bin" / "python3"
+    return f"{exe} app.py" if exe.exists() else "python3 app.py"
+
+
 def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
@@ -91,10 +101,14 @@ def main() -> int:
         print("\nVse pripravljeno! Granova zdaj teče v ozadju (glej ikono v sistemski vrstici)")
         print("  in se bo samodejno zagnala ob vsaki prijavi — terminala ni več treba odpirati.")
         print("  Ob vsakem Meet klicu posname, transkribira in zapiše Google Doc.")
-    else:
-        print("\nVse pripravljeno! Zaženi jo s 'Start Granova' in pusti v sistemski vrstici —")
-        print("  ob vsakem Meet klicu posname, transkribira in zapiše Google Doc.")
-    return 0
+        return 0
+
+    # Nastavitev je shranjena, a zagon ni obstal — tega ne smemo zamolčati.
+    print("\n✗ Nastavitev je shranjena, a Granova se ob zagonu ni obdržala.")
+    print(f"  Vzrok je zapisan v: {autostart.startup_log_path()}")
+    print("  Pošlji to datoteko razvijalcu — ali napako pokaži takoj z ukazom:")
+    print(f"      {_foreground_command()}")
+    return 1
 
 
 if __name__ == "__main__":

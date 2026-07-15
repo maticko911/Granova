@@ -5,9 +5,10 @@
 // Brez argumentov, brez datotek. Zahteva macOS 13+ in dovoljenje
 // "Screen Recording" (System Settings → Privacy & Security).
 //
-// Prevede ga setup.command:
+// Prevede ga setup.command v mapo, ki jo določa mac_capture.HELPER_PATH
+// (data/bin/ znotraj mape aplikacije):
 //   swiftc -O -framework ScreenCaptureKit -framework AVFoundation \
-//     -o "$HOME/Library/Application Support/Granola/bin/granova-system-audio" \
+//     -o "$BIN_DIR/granova-system-audio" \
 //     granova/audio_capture/mac_system_audio.swift
 
 import AVFoundation

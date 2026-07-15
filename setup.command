@@ -26,7 +26,14 @@ if ! command -v swiftc >/dev/null 2>&1; then
     read -r -p "Pritisni Enter za konec ..."
     exit 1
 fi
-BIN_DIR="$HOME/Library/Application Support/Granola/bin"
+# Pot vpraša aplikacijo samo (granova.config.APP_DIR), da se prevedeni pomočnik
+# pristane točno tam, kjer ga mac_capture.py išče — tudi ob GRANOVA_DATA_DIR.
+BIN_DIR="$(.venv/bin/python3 -c 'from granova.audio_capture.mac_capture import HELPER_PATH; print(HELPER_PATH.parent)')"
+if [ -z "$BIN_DIR" ]; then
+    echo "Poti za pomočnika ni bilo mogoče ugotoviti — namestitev knjižnic ni uspela."
+    read -r -p "Pritisni Enter za konec ..."
+    exit 1
+fi
 mkdir -p "$BIN_DIR"
 echo "Prevajam pomočnika za sistemski zvok ..."
 if ! swiftc -O -framework ScreenCaptureKit -framework AVFoundation \
