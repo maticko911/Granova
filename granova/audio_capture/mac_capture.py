@@ -7,6 +7,7 @@ kar se je nabralo od zadnjega klica, snemanje pa se nikoli ne prekinja.
 """
 from __future__ import annotations
 
+import logging
 import subprocess
 import threading
 from pathlib import Path
@@ -14,10 +15,15 @@ from pathlib import Path
 from granova.audio_capture import Pcm
 from granova.config import APP_DIR
 
+logger = logging.getLogger(__name__)
+
 RATE = 48000
 BLOCK_BYTES = 4096
 
 HELPER_PATH = APP_DIR / "bin" / "granova-system-audio"
+# Stderr pomočnika (npr. »manjka dovoljenje Screen Recording«) gre sem, ne v nič —
+# sicer se odpoved sistemskega zvoka tiho izgubi in posnetek je nem brez sledi.
+HELPER_LOG = APP_DIR / "granova-audio-helper.log"
 
 
 class _ByteBuffer:
@@ -51,6 +57,16 @@ class MacCapture:
         self._mic_buffer: _ByteBuffer | None = None
         self._mic_stream = None
         self._reader: threading.Thread | None = None
+        self._stderr_file = None
+        self._stopping = False
+
+    def _open_helper_log(self):
+        """Odpre dnevnik za stderr pomočnika; ob napaki pade nazaj na DEVNULL."""
+        try:
+            HELPER_LOG.parent.mkdir(parents=True, exist_ok=True)
+            return open(HELPER_LOG, "a", encoding="utf-8", errors="replace")
+        except OSError:
+            return None
 
     def start(self) -> None:
         if not self._helper_path.exists():
@@ -58,10 +74,12 @@ class MacCapture:
                 "Pomočnik za sistemski zvok ni nameščen — zaženi setup.command "
                 f"(pričakovan: {self._helper_path})"
             )
+        self._stopping = False
+        self._stderr_file = self._open_helper_log()
         self._proc = subprocess.Popen(
             [str(self._helper_path)],
             stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
+            stderr=self._stderr_file or subprocess.DEVNULL,
         )
         self._system = _ByteBuffer(rate=RATE, channels=1)
         self._reader = threading.Thread(target=self._read_system, daemon=True)
@@ -75,6 +93,16 @@ class MacCapture:
             if not chunk:
                 break
             buf.append(chunk)
+        # Tok se je zaprl. Če ga nismo ustavili mi, je pomočnik umrl sam —
+        # skoraj vedno manjka dovoljenje »Screen Recording«. Naredi to vidno.
+        if not self._stopping:
+            rc = proc.poll()
+            logger.error(
+                "Pomočnik za sistemski zvok se je nepričakovano končal (koda %s). "
+                "Najverjetneje manjka dovoljenje »Screen Recording« za %s. "
+                "Razlog je zapisan v %s.",
+                rc, self._helper_path, HELPER_LOG,
+            )
 
     def _start_mic(self) -> None:
         try:
@@ -102,6 +130,7 @@ class MacCapture:
         return system, mic
 
     def stop(self) -> None:
+        self._stopping = True  # da _read_system normalne ustavitve ne razglasi za zlom
         if self._proc:
             self._proc.terminate()
             try:
@@ -116,5 +145,10 @@ class MacCapture:
                 self._mic_stream.close()
             except Exception:
                 pass
+        if self._stderr_file:
+            try:
+                self._stderr_file.close()
+            except OSError:
+                pass
         self._proc = self._system = self._mic_buffer = None
-        self._mic_stream = self._reader = None
+        self._mic_stream = self._reader = self._stderr_file = None
