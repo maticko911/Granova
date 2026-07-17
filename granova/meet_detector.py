@@ -1,16 +1,23 @@
-"""Zaznava aktivnega Google Meet klica prek naslovov oken.
+"""Zaznava aktivnega Google Meet klica prek naslovov zavihkov / oken.
 
-Med klicem ima zavihek naslov "Meet – abc-defg-hij" (ali ime sestanka), brskalnik
-pa to prenese v naslov okna (npr. "Meet – abc-defg-hij - Google Chrome").
+Med klicem ima zavihek naslov "Meet – abc-defg-hij" (ali ime sestanka).
 Domača stran je "Google Meet" in se NE šteje za klic.
 
+Kje beremo naslove:
+  * Windows: naslovi oken prek pygetwindow.
+  * macOS:   naslovi zavihkov brskalnikov prek AppleScript (Automation) — macOS
+    za to sam vpraša »… wants to control …«, kar je dovolj. Branje naslovov OKEN
+    prek Quartza namreč zahteva dovoljenje Screen Recording in brez njega tiho
+    vrne prazna imena (zaznava tedaj nikoli ne steče); Quartz ostane le rezerva.
+
 `find_meet_window` je čista funkcija (testabilna brez oken); `MeetDetector`
-periodično bere naslove vseh oken in sproži call-started / call-ended.
+periodično bere naslove in sproži call-started / call-ended.
 """
 from __future__ import annotations
 
 import logging
 import re
+import subprocess
 import threading
 
 logger = logging.getLogger(__name__)
@@ -35,8 +42,86 @@ def default_titles_fn():
     raise NotImplementedError(f"Branje naslovov oken za {sys.platform} še ni podprto")
 
 
-def _mac_window_titles() -> list[str]:
-    """Naslovi vidnih oken prek Quartz (deli dovoljenje Screen Recording z zvokom)."""
+# Brskalniki, ki znajo prek AppleScript vrniti naslove svojih zavihkov.
+# Ključ je bundle ID (za preverjanje, ali teče), vrednost ime aplikacije za "tell".
+_SCRIPTABLE_BROWSERS = {
+    "com.google.Chrome": "Google Chrome",
+    "com.google.Chrome.canary": "Google Chrome Canary",
+    "com.microsoft.edgemac": "Microsoft Edge",
+    "com.brave.Browser": "Brave Browser",
+    "org.chromium.Chromium": "Chromium",
+    "company.thebrowser.Browser": "Arc",
+    "com.vivaldi.Vivaldi": "Vivaldi",
+    "com.operasoftware.Opera": "Opera",
+    "com.apple.Safari": "Safari",
+}
+
+
+def _mac_running_browsers() -> list[str]:
+    """Imena scriptabilnih brskalnikov, ki trenutno tečejo (brez zaganjanja).
+
+    Preverimo prek NSWorkspace (ne potrebuje dovoljenj), da z AppleScript ne
+    zaženemo brskalnika, ki sploh ni odprt.
+    """
+    try:
+        from AppKit import NSWorkspace
+    except Exception:
+        logger.debug("AppKit ni na voljo — preskočim branje zavihkov", exc_info=True)
+        return []
+    running = {
+        app.bundleIdentifier()
+        for app in NSWorkspace.sharedWorkspace().runningApplications()
+        if app.bundleIdentifier()
+    }
+    return [name for bid, name in _SCRIPTABLE_BROWSERS.items() if bid in running]
+
+
+def _browser_tab_script(app_name: str) -> str:
+    """AppleScript, ki vrne naslove vseh zavihkov danega brskalnika (po vrsticah)."""
+    prop = "name" if app_name == "Safari" else "title"  # Safari: name, Chromium: title
+    return (
+        f'tell application "{app_name}"\n'
+        '\tset out to ""\n'
+        "\trepeat with w in windows\n"
+        "\t\trepeat with t in tabs of w\n"
+        f"\t\t\tset out to out & ({prop} of t) & linefeed\n"
+        "\t\tend repeat\n"
+        "\tend repeat\n"
+        "\treturn out\n"
+        "end tell"
+    )
+
+
+def _mac_browser_tab_titles() -> list[str]:
+    """Naslovi vseh zavihkov odprtih brskalnikov prek AppleScript (Automation).
+
+    Zajame tudi zavihke v ozadju in NE potrebuje dovoljenja Screen Recording.
+    Ob prvem klicu macOS vpraša »… wants to control …«; po potrditvi deluje tiho,
+    tudi pri samodejnem zagonu. Če je dovoljenje zavrnjeno, osascript vrne napako
+    in ta brskalnik le preskočimo (brez izjeme, brez ponavljajočega dnevnika).
+    """
+    titles: list[str] = []
+    for name in _mac_running_browsers():
+        try:
+            res = subprocess.run(
+                ["osascript", "-e", _browser_tab_script(name)],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+        except (OSError, subprocess.SubprocessError):
+            continue
+        if res.returncode == 0:
+            titles.extend(line for line in res.stdout.splitlines() if line.strip())
+    return titles
+
+
+def _quartz_window_titles() -> list[str]:
+    """Naslovi vidnih oken prek Quartz — zahteva dovoljenje Screen Recording.
+
+    Brez tega dovoljenja so imena oken prazna, zato to ni glavna pot, le rezerva
+    (npr. za brskalnike brez AppleScripta, ki pa imajo Screen Recording dodeljen).
+    """
     import Quartz
 
     info = Quartz.CGWindowListCopyWindowInfo(
@@ -44,6 +129,16 @@ def _mac_window_titles() -> list[str]:
         Quartz.kCGNullWindowID,
     )
     return [w.get(Quartz.kCGWindowName, "") for w in (info or [])]
+
+
+def _mac_window_titles() -> list[str]:
+    """Naslovi za zaznavo Meeta na macOS: zavihki brskalnikov + rezervni Quartz."""
+    titles = _mac_browser_tab_titles()
+    try:
+        titles.extend(_quartz_window_titles())
+    except Exception:
+        logger.debug("Quartz branje oken ni uspelo", exc_info=True)
+    return titles
 
 
 def find_meet_window(titles: list[str]) -> str | None:
