@@ -8,10 +8,13 @@ datoteke pišeta samo enable()/disable().
 """
 from __future__ import annotations
 
+import logging
 import os
 import subprocess
 import sys
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 ENTRY_NAME = "Granova"
 LAUNCHAGENT_LABEL = "com.granova.app"
@@ -216,8 +219,19 @@ def enable() -> Path:
         path.write_text(windows_cmd_content(repo_dir()), encoding="utf-8", newline="")
     else:  # darwin (drugi OS-i padejo že v entry_path)
         path.write_text(launchagent_plist_content(repo_dir()), encoding="utf-8")
-        subprocess.run(["launchctl", "load", str(path)], check=False,
+        # Najprej odloži morebitno staro različico: launchctl load na že naloženo
+        # storitev odpove ("service already loaded") in spremenjen plist (npr. po
+        # preselitvi mape prek refresh()) nikoli ne stopi v veljavo.
+        subprocess.run(["launchctl", "unload", str(path)], check=False,
                        capture_output=True)
+        res = subprocess.run(["launchctl", "load", str(path)], check=False,
+                             capture_output=True, text=True)
+        if res.returncode != 0:
+            # Ne požri tega: brez tega je »samodejni zagon vklopljen« lahko laž.
+            logger.warning(
+                "launchctl load ni uspel (koda %s): %s — samodejni zagon morda ne bo deloval",
+                res.returncode, (res.stderr or res.stdout or "").strip(),
+            )
     return path
 
 

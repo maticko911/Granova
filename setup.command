@@ -18,30 +18,38 @@ echo "Nameščam knjižnice ..."
 .venv/bin/python3 -m pip install -q -r requirements.txt || \
 .venv/bin/python3 -m pip install -q -r requirements.txt --trusted-host pypi.org --trusted-host files.pythonhosted.org
 
-# Pomočnik za sistemski zvok (ScreenCaptureKit) — potrebuje Xcode ukazna orodja
+# Pomočnik za sistemski zvok (ScreenCaptureKit) — potrebuje Xcode ukazna orodja.
+# Če ga ne moremo prevesti, to NI razlog za prekinitev: ključi, Google prijava in
+# SAMODEJNI ZAGON morajo steči vseeno. Prej je manjkajoč swiftc ustavil skripto
+# pred `granova.setup`, zato se Granova ni zagnala niti ob prijavi — čeprav z
+# zvokom nima nobene zveze. Brez pomočnika deluje vse razen sistemskega zvoka.
 if ! command -v swiftc >/dev/null 2>&1; then
-    echo "Manjkajo Xcode ukazna orodja (swiftc). Namesti jih z ukazom:"
-    echo "    xcode-select --install"
-    echo "in po namestitvi še enkrat odpri setup.command."
-    read -r -p "Pritisni Enter za konec ..."
-    exit 1
-fi
-# Pot vpraša aplikacijo samo (granova.config.APP_DIR), da se prevedeni pomočnik
-# pristane točno tam, kjer ga mac_capture.py išče — tudi ob GRANOVA_DATA_DIR.
-BIN_DIR="$(.venv/bin/python3 -c 'from granova.audio_capture.mac_capture import HELPER_PATH; print(HELPER_PATH.parent)')"
-if [ -z "$BIN_DIR" ]; then
-    echo "Poti za pomočnika ni bilo mogoče ugotoviti — namestitev knjižnic ni uspela."
-    read -r -p "Pritisni Enter za konec ..."
-    exit 1
-fi
-mkdir -p "$BIN_DIR"
-echo "Prevajam pomočnika za sistemski zvok ..."
-if ! swiftc -O -framework ScreenCaptureKit -framework AVFoundation \
-    -o "$BIN_DIR/granova-system-audio" \
-    granova/audio_capture/mac_system_audio.swift; then
-    echo "Prevajanje ni uspelo — potreben je macOS 13 ali novejši."
-    read -r -p "Pritisni Enter za konec ..."
-    exit 1
+    echo "OPOZORILO: manjkajo Xcode ukazna orodja (swiftc)."
+    echo "  Zajem sistemskega zvoka zato ne bo na voljo. Namesti jih z ukazom:"
+    echo "      xcode-select --install"
+    echo "  in nato še enkrat odpri setup.command. Nastavitev nadaljujem ..."
+    echo
+else
+    # Pot vpraša aplikacijo samo (granova.config.APP_DIR), da prevedeni pomočnik
+    # pristane točno tam, kjer ga mac_capture.py išče — tudi ob GRANOVA_DATA_DIR.
+    BIN_DIR="$(.venv/bin/python3 -c 'from granova.audio_capture.mac_capture import HELPER_PATH; print(HELPER_PATH.parent)')"
+    if [ -z "$BIN_DIR" ]; then
+        echo "OPOZORILO: poti za pomočnika ni bilo mogoče ugotoviti (knjižnice niso"
+        echo "  nameščene?) — sistemski zvok ne bo na voljo. Nastavitev nadaljujem ..."
+        echo
+    else
+        mkdir -p "$BIN_DIR"
+        echo "Prevajam pomočnika za sistemski zvok ..."
+        if swiftc -O -framework ScreenCaptureKit -framework AVFoundation \
+            -o "$BIN_DIR/granova-system-audio" \
+            granova/audio_capture/mac_system_audio.swift; then
+            echo "✓ Pomočnik za sistemski zvok pripravljen"
+        else
+            echo "OPOZORILO: prevajanje ni uspelo (potreben je macOS 13 ali novejši)"
+            echo "  — sistemski zvok ne bo na voljo. Nastavitev nadaljujem ..."
+        fi
+        echo
+    fi
 fi
 
 echo
