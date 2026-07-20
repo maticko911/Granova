@@ -174,7 +174,10 @@ class GranovaApp:
     def _pump(self) -> None:
         try:
             while True:
-                kind, payload = self._events.get_nowait()
+                try:
+                    kind, payload = self._events.get_nowait()
+                except queue.Empty:
+                    break
                 if kind == "call_started":
                     self._start_session(payload)
                 elif kind == "stop_requested":
@@ -182,8 +185,11 @@ class GranovaApp:
                 elif kind == "quit":
                     self._quit()
                     return
-        except queue.Empty:
-            pass
+        except Exception:
+            # Napaka pri obdelavi dogodka NE sme ubiti zanke: brez tega se
+            # `after` spodaj nikoli ne prestavi in Granova tiho neha odzivati
+            # (navidez teče, v resnici ne sliši več ne klicev ne menija).
+            logger.exception("Napaka pri obdelavi dogodka — Granova teče naprej")
         self.root.after(200, self._pump)
 
     def _start_session(self, meeting_name: str) -> None:
@@ -191,13 +197,23 @@ class GranovaApp:
             return  # seja že teče
         self._meeting_name = meeting_name
         self._finalizing = False
-        self._window = LiveWindow(self.root, on_stop=lambda: self._events.put(("stop_requested", None)))
-        self._window.set_title(meeting_name)
-        self._recorder = Recorder(
-            on_chunk=self._window.append_chunk,
+        window = LiveWindow(self.root, on_stop=lambda: self._events.put(("stop_requested", None)))
+        window.set_title(meeting_name)
+        recorder = Recorder(
+            on_chunk=window.append_chunk,
             on_silence_timeout=lambda: self._events.put(("stop_requested", None)),
         )
-        self._recorder.start()
+        try:
+            recorder.start()
+        except Exception as exc:
+            # Zajem ni stekel (npr. pomočnik za sistemski zvok ni preveden).
+            # Povej v oknu in ostani v mirovanju: če bi _recorder ostal
+            # nastavljen, se noben naslednji klic ne bi več začel.
+            logger.exception("Snemanja ni bilo mogoče začeti")
+            window.show_error(f"Snemanje se ni začelo: {exc}")
+            return
+        self._window = window
+        self._recorder = recorder
         self.tray.icon = _tray_image("#e05252")
         self.tray.title = f"Granova — snemam: {meeting_name}"
         threading.Thread(target=self._enrich_title, daemon=True).start()
